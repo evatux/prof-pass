@@ -53,3 +53,7 @@ static RegisterStandardPasses RegisterMyPass(
         //PassManagerBuilder::EP_EarlyAsPossible,
         PassManagerBuilder::EP_ModuleOptimizerEarly,
         [](const PassManagerBuilder &, legacy::PassManagerBase &PM) { PM.add(new ProfPass()); });
+
+static RegisterStandardPasses
+    RegisterMyPass0(PassManagerBuilder::EP_EnabledOnOptLevel0,
+        [](const PassManagerBuilder &, legacy::PassManagerBase &PM) { PM.add(new ProfPass()); });
