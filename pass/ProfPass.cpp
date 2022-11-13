@@ -43,7 +43,7 @@ struct ProfPass : public ModulePass {
                 if (dyn_cast<ReturnInst>(t)) {
                     auto before_return_inst = t->getPrevNode();
                     errs() << "@@@ I saw a return after " << before_return_inst->getOpcodeName() << "!\n";
-                    IRBuilder<> BuilderUnregister(const_cast<llvm::Instruction *>(before_return_inst));
+                    IRBuilder<> BuilderUnregister(const_cast<llvm::Instruction *>(t));
                     BuilderUnregister.CreateCall(ProfUnregister, {FuncName});
                 }
             }
