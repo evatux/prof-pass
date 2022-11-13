@@ -27,11 +27,7 @@ struct ProfPass : public ModulePass {
         ProfF->addParamAttr(0, Attribute::NoCapture);
         ProfF->addParamAttr(0, Attribute::ReadOnly);
 
-        llvm::Constant *ProfFormatStr = llvm::ConstantDataArray::getString(
-                CTX, "(llvm-tutor)\n");
-        Constant *ProfFormatStrVar =
-            M.getOrInsertGlobal("ProfFormatStr", ProfFormatStr->getType());
-        dyn_cast<GlobalVariable>(ProfFormatStrVar)->setInitializer(ProfFormatStr);
+        FunctionCallee ProfUnregister = M.getOrInsertFunction("prof_unregister_foo", ProfTy);
 
         for (const auto &F : M) {
             if (F.isDeclaration()) continue;
@@ -40,8 +36,17 @@ struct ProfPass : public ModulePass {
 
             IRBuilder<> Builder(const_cast<llvm::Instruction *>(&*F.getEntryBlock().getFirstInsertionPt()));
             auto FuncName = Builder.CreateGlobalStringPtr(F.getName());
-            llvm::Value *FormatStrPtr = Builder.CreatePointerCast(ProfFormatStrVar, ProfArgTy, "formatStr");
             Builder.CreateCall(Prof, {FuncName});
+
+            for (const auto &B : F.getBasicBlockList()) {
+                auto t = B.getTerminator();
+                if (dyn_cast<ReturnInst>(t)) {
+                    auto before_return_inst = t->getPrevNode();
+                    errs() << "@@@ I saw a return after " << before_return_inst->getOpcodeName() << "!\n";
+                    IRBuilder<> BuilderUnregister(const_cast<llvm::Instruction *>(before_return_inst));
+                    Builder.CreateCall(ProfUnregister, {FuncName});
+                }
+            }
         }
         return false;
     }
