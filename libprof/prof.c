@@ -6,6 +6,7 @@
 #include <immintrin.h>
 
 #include "prof.h"
+#include "internal.h"
 
 const char *prof_fname = "prof.json";
 
@@ -19,6 +20,13 @@ typedef uint64_t time_stamp_t;
 time_stamp_t time_stamp_start;
 time_stamp_t get_time_stamp() {
     return __rdtsc() - time_stamp_start;
+}
+
+static pthread_once_t init_once_flag = PTHREAD_ONCE_INIT;
+
+void init_once() {
+    init_demangler();
+    time_stamp_start = get_time_stamp();
 }
 
 typedef enum { DIR_IN, DIR_OUT } dir_t;
@@ -65,9 +73,10 @@ void list_grow(const char *name, dir_t dir) {
 void prof_register_foo(const char *name) {
     // instead of first call
     if (tid_self == 0) {
+        pthread_once(&init_once_flag, init_once);
         tid_self = pthread_self();
-        time_stamp_start = get_time_stamp();
     }
+
     list_grow(name, DIR_IN);
 }
 
@@ -88,6 +97,8 @@ void prof_exit() {
         if (i < cur->size) {
             if (first_entry_added) fprintf(f, ",\n");
             const entry_t *entry = &cur->entries[i];
+            char *cxx_name = demangler(entry->name);
+            const char *name = cxx_name ? cxx_name : entry->name;
             fprintf(f, "{"
                     "  \"name\" : \"%s\""
                     ", \"cat\" : \"category0\""
@@ -96,11 +107,12 @@ void prof_exit() {
                     ", \"pid\" : 1"
                     ", \"tid\" : %llu"
                     " }",
-                    entry->name,
+                    name,
                     entry->dir == DIR_IN ? 'B' : 'E',
                     (unsigned long long)entry->time_stamp,
                     (unsigned long long)entry->tid);
             // printf("call '%s'\n", cur->entries[i].name);
+            free(cxx_name);
             ++i;
             if (!first_entry_added) first_entry_added = 1;
         }
