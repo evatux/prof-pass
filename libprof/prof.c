@@ -5,6 +5,15 @@
 
 const char *prof_fname = "prof.json";
 
+int skip_level(int call_level) {
+    static int max_level = -1;
+    if (max_level == -1) {
+        const char *env = getenv("PROF_MAX_LEVEL");
+        max_level = env ? atoi(env) : 3;
+    }
+    return call_level > max_level;
+}
+
 static pthread_once_t init_once_flag = PTHREAD_ONCE_INIT;
 void init_once() {
     demangler_init();
@@ -32,11 +41,15 @@ void prof_exit() {
     while(tl_heads) {
         pthread_t tid = tl_heads->tid;
         const list_t *cur = tl_heads->head;
+        int call_level = 0;
         size_t i = 0;
         while (1) {
             if (i < cur->size) {
-                if (first_entry_added) fprintf(f, ",\n");
                 const entry_t *entry = &cur->entries[i];
+                call_level += entry->dir == DIR_IN ? 1 : 0;
+                if (skip_level(call_level)) goto skip;
+
+                if (first_entry_added) fprintf(f, ",\n");
                 char *cxx_name = demangler(entry->name);
                 const char *name = cxx_name ? cxx_name : entry->name;
                 fprintf(f, "{"
@@ -53,8 +66,10 @@ void prof_exit() {
                         (unsigned long long)tid);
                 // printf("call '%s'\n", cur->entries[i].name);
                 free(cxx_name);
-                ++i;
                 if (!first_entry_added) first_entry_added = 1;
+                skip:
+                call_level += entry->dir == DIR_IN ? 0 : -1;
+                ++i;
             }
             if (i == cur->size) {
                 if (cur->size == list_num_max_entries) {
