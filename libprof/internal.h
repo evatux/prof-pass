@@ -11,6 +11,7 @@
 typedef uint64_t time_stamp_t;
 void time_init();
 time_stamp_t time_get();
+double time_to_us(time_stamp_t time_stamp);
 
 // demangler
 void demangler_init();

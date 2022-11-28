@@ -43,13 +43,13 @@ void prof_exit() {
                         "  \"name\" : \"%s\""
                         ", \"cat\" : \"category0\""
                         ", \"ph\" : \"%c\""
-                        ", \"ts\" : %llu"
+                        ", \"ts\" : %.6f"
                         ", \"pid\" : 1"
                         ", \"tid\" : %llu"
                         " }",
                         name,
                         entry->dir == DIR_IN ? 'B' : 'E',
-                        (unsigned long long)entry->time_stamp,
+                        time_to_us(entry->time_stamp),
                         (unsigned long long)tid);
                 // printf("call '%s'\n", cur->entries[i].name);
                 free(cxx_name);
