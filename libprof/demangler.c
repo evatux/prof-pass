@@ -7,7 +7,7 @@
 typedef char* (*abi_demangle_f)(const char *mangled_name, char *output_buffer, size_t *length, int *status);
 
 static abi_demangle_f abi_demangle;
-void init_demangler() {
+void demangler_init() {
     void *h = dlopen("libstdc++.so.6", RTLD_LOCAL | RTLD_LAZY);
     printf("@@@ h : %p\n", h);
     if (!h) return;
