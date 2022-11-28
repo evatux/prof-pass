@@ -6,3 +6,4 @@ function(add name)
 endfunction()
 
 add(example_01 example_01.cpp)
+add(example_02 example_02.cpp)
